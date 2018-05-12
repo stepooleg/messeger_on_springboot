@@ -14,12 +14,23 @@ public class MsgModel {
     @JoinColumn(name = "user_id")
     private User author;
 
+    private String filename;
+
+
+
     public MsgModel() {
     }
     public MsgModel(String text, String tag, User user) {
         author = user;
         this.text = text;
         this.tag = tag;
+    }
+    public String getFilename() {
+        return filename;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
     }
 
     public Long getId() {

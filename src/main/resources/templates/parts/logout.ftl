@@ -2,6 +2,6 @@
 
 <form action="/logout" method="post">
     <input type="hidden" name="_csrf" value="${_csrf.token}"/>
-    <input type="submit" value="Sign Out"/>
+    <button type="submit" class="btn btn-primary" value="Sign In"/> Sign Out</button>
 </form>
 </#macro>
