@@ -7,16 +7,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Controller
 public class MsgControler {
@@ -31,43 +36,60 @@ public class MsgControler {
     private String uploadPath;
 
     @GetMapping("/")
-    public String home(Map<String,Object> model){
+    public String home(Map<String, Object> model) {
         return "index";
     }
+
     @GetMapping("/main")
-    public String main(@RequestParam(required = false, defaultValue = "")String filter, Model model){
-        Iterable<MsgModel> msg= msgRepo.findAll();
-        if(filter!=null&&!filter.isEmpty()){
+    public String main(@RequestParam(required = false, defaultValue = "") String filter, Model model) {
+        Iterable<MsgModel> msg = msgRepo.findAll();
+        if (filter != null && !filter.isEmpty()) {
             msg = msgRepo.findByTag(filter);
+        } else {
+            msg = msgRepo.findAll();
         }
-        else {
-            msg= msgRepo.findAll();
-        }
-        model.addAttribute("messages",msg);
-        model.addAttribute("filter",filter);
+        model.addAttribute("messages", msg);
+        model.addAttribute("filter", filter);
         return "main";
     }
+
     @PostMapping("/main")
     public String add(
             @AuthenticationPrincipal User user,
-            @RequestParam String text,
-            @RequestParam String tag, Map<String,Object> model,
-            @RequestParam("file") MultipartFile file) throws IOException {
-        MsgModel msgModel = new MsgModel(text, tag, user);
-        if(file !=null && !file.getOriginalFilename().isEmpty()){
-            File uploafFolder = new File(uploadPath);
-            if(!uploafFolder.exists()){
-                uploafFolder.mkdirs();
+            @Valid MsgModel msgModel,
+            BindingResult bindingResult,
+            Model model,
+            @RequestParam("file") MultipartFile file)
+            throws IOException {
+        msgModel.setAuthor(user);
+
+        if (bindingResult.hasErrors()){
+            Map<String, String> errorMap = ControllerUtils.getErrors(bindingResult);
+            model.mergeAttributes(errorMap);
+            model.addAttribute("message", msgModel);
+
+
+        }else {
+
+            if (file != null && !file.getOriginalFilename().isEmpty()) {
+                File uploaFolder = new File(uploadPath);
+                if (!uploaFolder.exists()) {
+                    uploaFolder.mkdirs();
+                }
+                String uuitFile = UUID.randomUUID().toString();
+                String resultFileName = uuitFile + "." + file.getOriginalFilename();
+                file.transferTo(new File(uploadPath + "/" + resultFileName));
+                msgModel.setFilename(resultFileName);
             }
-            String uuitFile = UUID.randomUUID().toString();
-            String resultFileName = uuitFile + "." + file.getOriginalFilename();
-            file.transferTo(new File(uploadPath + "/" + resultFileName));
-            msgModel.setFilename(resultFileName);
+
+            model.addAttribute("message",null);
+            msgRepo.save(msgModel);
         }
-        msgRepo.save(msgModel);
-        List<MsgModel> msg= msgRepo.findAll();
-        model.put("messages",msg);
+        List<MsgModel> msg = msgRepo.findAll();
+        model.addAttribute("messages", msg);
         return "main";
     }
+
+
 
 }
