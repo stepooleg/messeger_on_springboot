@@ -5,6 +5,7 @@ import com.exemple.msg.models.Role;
 import com.exemple.msg.models.User;
 import com.exemple.msg.repositories.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,6 +25,9 @@ public class UserService implements UserDetailsService {
     MailSender mailSender;
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Value("${hostname}")
+    private String hostname;
 
     @Override
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
@@ -57,8 +61,9 @@ public class UserService implements UserDetailsService {
         if(!StringUtils.isEmpty( user.getEmail())){
             String message = String.format(
                     "Hello, %s! \n" +
-                            "Welcome to MSG. Please, visit next link: http://localhost:8090/activate/%s",
+                            "Welcome to MSG. Please, visit next link: http://%s/activate/%s",
                     user.getUsername(),
+                    hostname,
                     user.getActivationCode()
 
             );
